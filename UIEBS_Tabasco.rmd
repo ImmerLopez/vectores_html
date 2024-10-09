@@ -1,0 +1,1256 @@
+---
+title: "Programa Estatal de Prevención y Control de las ETVs de Tabasco 2024 | UIEB´S"
+author: "UNIDAD DE INVESTIGACIÓN ENTOMOLOGÍCA DE TABASCO"
+output: 
+  flexdashboard::flex_dashboard:
+    logo:
+    horizontal_layout: scroll
+    navbar:
+       - { title: "", href: "", align: right}
+    theme: lumen
+    social: [ "twitter", "facebook", "linkedin" ]
+    source_code: "https://github.com/ImmerLopez/Rmark"
+    toc_depth: 2
+    highlight: tango
+    editor: visual
+---
+
+```{=html}
+<style>
+.html -widget{
+    margin: auto;
+  }
+</style>  
+```
+```{r include=FALSE}
+library(flexdashboard)
+require(pacman)
+pacman::p_load(ggplot2,plotly,dplyr,scales,leaflet,
+        leaflet.extras,rworldxtra,raster,sf,tidyverse,
+        mapview,viridis,RcolorBrewer,readr)
+
+load("~/RMarkdown_Final/denmex_2024_edo27.RData")
+```
+
+```{r include=FALSE}
+# Metodo por sf
+z_tab <- z_tab |> 
+    sf::st_as_sf(coords = c("long", "lat"),crs = 4326) |>
+    dplyr::mutate(ESTATUS_CASO = ifelse(ESTATUS_CASO == 1,
+                                        "Probable",
+                                        "Confirmado"))
+```
+
+```{r include=FALSE}
+# Filtrado de Variables
+Confirmados <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Confirmado")
+Probables <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Probable")
+DENV_1 <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Confirmado") |>
+    dplyr::filter(DENGUE_SER_TRIPLEX == 1)
+DENV_2 <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Confirmado") |>
+    dplyr::filter(DENGUE_SER_TRIPLEX == 2)
+DENV_3 <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Confirmado") |>
+    dplyr::filter(DENGUE_SER_TRIPLEX == 3)
+DENV_4 <- z_tab |>
+    dplyr::filter(ESTATUS_CASO == "Confirmado") |>
+    dplyr::filter(DENGUE_SER_TRIPLEX == 4)
+
+```
+
+# Distribución del Dengue {data-navmenu="Dengue" data-icon="fa-list"}
+
+### Mapa: Distribución del Dengue
+
+```{r Casos, include=TRUE, message = FALSE}
+mapview::mapview(Probables,color = "white", col.regions = "#ABC3DB") + 
+mapview::mapview(Confirmados,color = "white", col.regions = "#0920DB") +
+mapview::mapview(DENV_1,color = "white", col.regions = "#1F9DDB") +
+mapview::mapview(DENV_2,color = "white", col.regions = "#00E18B") + 
+mapview::mapview(DENV_3,color = "white", col.regions = "#DB0C28") +
+mapview::mapview(DENV_4,color = "white", col.regions = "orange")
+```
+
+# Panorama Epidemiológico {data-navmenu="Dengue" data-icon="fa-list"}
+
+## Columna 2
+
+### Gráfica: Casos Confirmados en Tabasco
+
+```{r echo=FALSE}
+dengue <- read.csv("~/RMarkdown_Final/Casc_serotipos_2016-2024.csv",na.string = "")
+dengue_fil <- dplyr::filter(dengue, DES_DIAG_FINAL %in%
+                            c("DENGUE GRAVE",
+                              "DENGUE NO GRAVE",
+                              "DENGUE CON SIGNOS DE ALARMA"))
+
+x <-
+  ggplot2::ggplot(dengue_fil, aes(ANO, fill ="Confirmados")) +   geom_bar(width = 0.7) +
+  scale_x_continuous(breaks = seq(2016,2024, by = 1)) +
+  labs(fill = "Casos",
+       y = "Numero de Casos")
+   
+plotly::ggplotly(x)  
+```
+
+### Gráfica: Casos Probables y Confirmados en Tabasco
+
+```{r echo=FALSE}
+dengue <- read.csv("~/RMarkdown_Final/Casc_serotipos_2016-2024.csv",na.string = "")
+```
+
+```{r echo=FALSE}
+
+#dengue_fi <- dplyr::filter(dengue, ESTATUS_CASO %in%
+#                           c("Confirmado",                   #                              "Probable"))
+dengue_fi <- dengue|>
+  dplyr::mutate(ESTATUS_CASO = ifelse(ESTATUS_CASO == 1,
+                                      "Probable",
+                                      "Confirmado"))
+
+x1 <-
+  ggplot2::ggplot(dengue_fi, aes(ANO, fill = ESTATUS_CASO)) + 
+  geom_bar(width = 0.7) +
+  scale_x_continuous(breaks = seq(2016,2024, by = 1)) +
+  labs(fill = "Casos",
+       y = "Numero de Casos"
+       )
+
+plotly::ggplotly(x1)
+```
+
+## Columna 1
+
+### Gráfica: Casos confirmados por Diagnostico en Tabasco
+
+```{r echo=FALSE}
+dengue_fil <- dplyr::filter(dengue, DES_DIAG_FINAL 
+                            %in% c("DENGUE GRAVE",
+                                   "DENGUE NO GRAVE",
+                                   "DENGUE CON SIGNOS DE ALARMA"))
+
+
+x2= ggplot(dengue_fil, aes(ANO, fill= DES_DIAG_FINAL)) + 
+    geom_bar() +
+    scale_x_continuous(breaks = seq(2016,2024, by = 1)) +
+    labs(fill = "Casos por Diagnostico",
+         y = "Numero de Casos"
+    )
+
+plotly::ggplotly(x2)
+```
+
+### Gráfica: Confirmados por Municipios, año 2024.
+
+```{r echo=FALSE}
+dengue <- read.csv("~/RMarkdown_Final/Casc_serotipos_2016-2024.csv",na.string = "")
+```
+
+```{r echo=FALSE}
+dengue_mun <- dplyr::filter(dengue, DES_DIAG_FINAL 
+                            %in% c("DENGUE GRAVE",
+                                   "DENGUE NO GRAVE",
+                                   "DENGUE CON SIGNOS DE ALARMA"))
+
+deng_m <- dplyr::filter(dengue_mun,DES_EDO_RES == "TABASCO" &
+                                                 ANO=="2024") 
+
+
+x4= ggplot(deng_m, aes(DES_MPO_RES, fill= DES_DIAG_FINAL)) + 
+    geom_bar() +
+    coord_flip() +
+    labs(fill = "Casos por Diagnostico",
+         x = "Municipios",
+         y = "Numero de Casos"
+    )
+
+plotly::ggplotly(x4)
+```
+
+# Casos en el Tiempo {data-navmenu="Dengue" data-icon="fa-list"}
+
+```{r echo=FALSE}
+dengue <- read.csv("~/RMarkdown_Final/Casc_serotipos_2016-2024.csv",na.string = "")
+```
+
+### Casos através del Tiempo
+
+```{r echo=FALSE}
+
+dengue_m <- dplyr::filter(dengue, DES_DIAG_FINAL 
+                          %in% c("DENGUE GRAVE",
+                                 "DENGUE NO GRAVE",
+                                 "DENGUE CON SIGNOS DE ALARMA"))
+
+grap <- dengue_m %>% 
+    filter(ANO >= 2016 & ANO <= 2024) %>%
+    group_by(ANO,SEM) %>%  count(ESTATUS_CASO)
+
+f <- ggplot2::ggplot(grap, aes(SEM,n, group = ANO, color= ANO)) +
+     geom_line(lwd=0.9)+
+     geom_point(size=2) +
+     scale_x_continuous(breaks = c(1:52)) +
+     xlab('Semanas Epidemiológicas')+
+     ylab('Número de Casos') +
+     scale_color_viridis_c(direction = -1,"")
+
+plotly::ggplotly(f)
+```
+
+# HeatMap {data-navmenu="Mapas Interactivos" data-icon="fa-list"}
+
+### Heatmap de Casos por Municipio 2024
+
+```{r echo=FALSE}
+mup_tab_fil<- dplyr::filter(dengue, DES_DIAG_FINAL 
+                            %in% c("DENGUE GRAVE",
+                                   "DENGUE NO GRAVE",
+                                   "DENGUE CON SIGNOS DE ALARMA"
+                                   )) 
+mup_tab <-  mup_tab_fil %>% 
+    filter(DES_EDO_RES == "TABASCO" & ANO == 2024 )
+    
+nva_tab <- mup_tab %>%
+group_by(DES_MPO_RES,SEM) %>%
+count(ESTATUS_CASO) 
+
+nva_tab <- rename(nva_tab, Casos = "n", Municipio = "DES_MPO_RES")
+
+heatmap_plot <- ggplot(nva_tab, aes(x = SEM, y = reorder(Municipio,Casos), fill = Casos, label = Casos)) +
+    geom_tile(color = "white") + # Create heatmap
+    geom_text(color = "white", size = 3) + # Add text labels
+    scale_x_continuous(breaks = c(1:52)) +
+    scale_fill_viridis_c(option = "viridis") +
+    #scale_fill_gradient(low = "lightblue", high = "darkblue") + # Set color gradient
+    theme_minimal() + # Set theme
+    labs(x = "Semanas", y = "Municipio", title = "Heatmap de Casos por Municipio") + # Labels
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # 
+plotly::ggplotly(heatmap_plot)
+```
+
+# HeatMap Casos 2024 {data-navmenu="Mapas Interactivos" data-icon="fa-list"}
+
+### Heatmap de Casos por Municipio 2024
+
+```{r echo=FALSE}
+dengue <- read.csv("~/RMarkdown_Final/Casc_serotipos_2016-2024.csv",na.string = "")
+```
+
+```{r echo=FALSE}
+# extrae los municipios de tabasco
+mun_tab <- rgeomex::AGEM_inegi19_mx |>
+    dplyr::filter(CVE_ENT == "27")
+
+dengue_m <- dplyr::filter(dengue, DES_DIAG_FINAL 
+                          %in% c("DENGUE GRAVE",
+                                 "DENGUE NO GRAVE",
+                                 "DENGUE CON SIGNOS DE ALARMA")& ANO == "2024")  
+
+nva_tab <- dengue_m %>%  group_by(DES_MPO_RES) %>%  count(ESTATUS_CASO)
+
+
+nva_tab <- nva_tab %>% 
+    mutate(DES_MPO_RES = case_when(DES_MPO_RES == "BALANCAN" ~ "Balancán",
+                                   DES_MPO_RES == "CARDENAS  TAB" ~ "Cárdenas",
+                                   DES_MPO_RES == "CENTLA" ~ "Centla",
+                                   DES_MPO_RES == "CENTRO" ~ "Centro",
+                                   DES_MPO_RES == "COMALCALCO" ~ "Comalcalco",
+                                   DES_MPO_RES == "CUNDUACAN" ~ "Cunduacán",
+                                   DES_MPO_RES == "EMILIANO ZAPATA  TAB" ~ "Emiliano Zapata",
+                                   DES_MPO_RES == "HUIMANGUILLO" ~ "Huimanguillo",
+                                   DES_MPO_RES == "JALAPA" ~ "Jalapa",
+                                   DES_MPO_RES == "JALPA DE MENDEZ" ~ "Jalpa de Méndez",
+                                   DES_MPO_RES == "JONUTA" ~ "Jonuta",
+                                   DES_MPO_RES == "MACUSPANA" ~ "Macuspana",
+                                   DES_MPO_RES == "NACAJUCA" ~ "Nacajuca",
+                                   DES_MPO_RES == "PARAISO" ~ "Paraíso",
+                                   DES_MPO_RES == "TACOTALPA" ~ "Tacotalpa",
+                                   DES_MPO_RES == "TEAPA" ~ "Teapa",
+                                   DES_MPO_RES == "TENOSIQUE" ~ "Tenosique",
+                                   TRUE ~ DES_MPO_RES))
+
+all_data <- inner_join(mun_tab, nva_tab, by = c("NOMGEO" = "DES_MPO_RES")) 
+
+data_cas <- rename(all_data, Casos = "n")
+
+
+mapview::mapview(data_cas, zcol= "Casos", col.region=viridis::viridis_pal(option = "H"),
+                 label = all_data$NOMGEO) 
+
+```
+
+# Mapa de Calor del Dengue {data-navmenu="Mapas Interactivos" data-icon="fa-list"}
+
+```{r echo=FALSE}
+load("~/RMarkdown_Final/denmex_2024_edo27.RData")
+#head(z_tab)
+
+# Nombre de diagnostico confirmado
+Diag_Names <- z_tab$DES_DIAG_FINAL %>% unique(na.rm =FALSE) 
+#view(Diag_Names)
+
+Spp_Pres <- list()
+for (i in 1:length(Diag_Names)) {
+    Spp_Pres[[i]] <- z_tab %>% dplyr::filter(DES_DIAG_FINAL ==
+                                             Diag_Names[i])
+}
+names(Spp_Pres) <- Diag_Names
+```
+
+```{r echo=FALSE}
+Heat_Map <- leaflet() %>% addTiles()
+for (i in 1:length(Spp_Pres)) {
+    Heat_Map <- Heat_Map %>% addHeatmap(data = Spp_Pres[[i]], 
+                                        lat = ~lat, lng = ~long, group = Diag_Names[i], blur = 20, radius = 35)
+}
+
+Heat_Map <- Heat_Map %>% addLayersControl(baseGroups = Diag_Names, 
+                                          options = layersControlOptions(collapsed = TRUE))
+Heat_Map
+```
+
+# Distrbución del Dengue Agrupado {data-navmenu="Mapas Interactivos" data-icon="fa-list"}
+
+```{r echo=FALSE}
+load("~/RMarkdown_Final/denmex_2024_edo27.RData")
+
+dengue_m <- dplyr::filter(z_tab, DES_DIAG_FINAL %in%
+                               c("DENGUE GRAVE",
+                                 "DENGUE NO GRAVE",
+                                 "DENGUE CON SIGNOS DE ALARMA"))
+
+leaflet(dengue_m) %>% addTiles() %>% addProviderTiles(providers$CartoDB.Positron) %>%
+    #addBootstrapDependency() %>%
+    addMarkers(data=dengue_m,
+               lat=~lat, lng=~long, 
+               label=~DES_DIAG_FINAL,
+               popup = paste0("Nombre:", as.character(dengue_m$DES_DIAG_FINAL)),
+               clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+               labelOptions = labelOptions(noHide = F,
+                                           direction = 'auto'))
+```
+
+------------------------------------------------------------------------
+
+# Balancán {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Balancán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Balancán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Balancán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Cardenás {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Cárdenas",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Cárdenas",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Cárdenas",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Centla {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Frontera",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Frontera",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Frontera",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Centro {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Villahermosa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 14,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Villahermosa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 14,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Villahermosa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 14,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Comalcalco {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Comalcalco",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Comalcalco",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Comalcalco",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Cunduacán {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Cunduacán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Cunduacán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Cunduacán",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Emiliano Zapata {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Emiliano Zapata",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Emiliano Zapata",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Emiliano Zapata",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Huimanguillo {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Huimanguillo",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Huimanguillo",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Huimanguillo",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Jalapa {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Jalapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Jalapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Jalapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+------------------------------------------------------------------------
+
+# Jalpa de Méndez {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Jalpa de Méndez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Jalpa de Méndez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Jalpa de Méndez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Jonuta {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Jonuta",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Jonuta",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Jonuta",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Macuspana {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Macuspana",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Macuspana",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Macuspana",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Nacajuca {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Nacajuca",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Nacajuca",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Nacajuca",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Paraíso {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Paraíso",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Paraíso",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Paraíso",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Tacotalpa {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Tacotalpa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Tacotalpa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Tacotalpa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Teapa {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Teapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Teapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Teapa",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+# Tenosique de Pino Suarez {data-navmenu="Mapas de Calor" data-icon="fa-list"}
+
+## Columna 1
+
+### **Acumulado**
+
+```{r echo=FALSE}
+densnv::mp_heatmap(locality = "Tenosique de Pino Suarez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(1:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 2
+
+### **Último Mes**
+
+```{r}
+densnv::mp_heatmap(locality = "Tenosique de Pino Suarez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(36:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
+
+## Columna 3
+
+### **Últimas 2 Semanas**
+
+```{r}
+densnv::mp_heatmap(locality = "Tenosique de Pino Suarez",
+                   cve_edo = "27",
+                   geocoded_datasets = z_tab,
+                   zoom = 15,
+                   status_caso = c(1,2),
+                   week = c(38:39),
+                   alpha = 0.2,
+                   static = TRUE,
+                   # “terrain”, “satellite”, “roadmap”, “hybrid”
+                   map_type = "hybrid")
+```
